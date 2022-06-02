@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/Kodik77rus/api-gen-doc/internal/config"
+	"github.com/Kodik77rus/api-gen-doc/internal/server"
 )
 
 func main() {
@@ -12,5 +12,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Print(appConf)
+
+	server, err := server.New(&appConf.Server)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Fatal(server.Start())
 }
