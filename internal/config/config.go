@@ -2,9 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
-
-	"path/filepath"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -17,11 +14,8 @@ type ServerConfig struct {
 }
 
 type TemplateBuilder struct {
-	TemplateFolder string `mapstructure:"TEMPLATE_FOLDER"`
-	WordFolder     string `mapstructure:"WORD_FOLDER"`
-	PdfFolder      string `mapstructure:"PDF_FOLDER"`
-
-	Tempaltes []string //files name
+	WordFolder string `mapstructure:"WORD_FOLDER"`
+	PdfFolder  string `mapstructure:"PDF_FOLDER"`
 }
 
 type AppConfig struct {
@@ -55,37 +49,5 @@ func NewConfig() (*AppConfig, error) {
 		return nil, err
 	}
 
-	if err := config.setTemplates(config.TemplateBuilder.TemplateFolder); err != nil {
-		return nil, err
-	}
-
 	return &config, nil
-}
-
-func (c *AppConfig) setTemplates(path string) error {
-	templatesFolder, err := os.Open(filepath.ToSlash(path))
-	if err != nil {
-		return err
-	}
-	defer templatesFolder.Close()
-
-	templates, err := templatesFolder.ReadDir(0)
-	if err != nil {
-		return err
-	}
-
-	if len(templates) == 0 {
-		return errNotFound{file: path}
-	}
-
-	for _, template := range templates {
-		c.SetTemplate(template.Name())
-		fmt.Println(template.Name(), "- tempalte loaded")
-	}
-
-	return nil
-}
-
-func (c *AppConfig) SetTemplate(t string) {
-	c.TemplateBuilder.Tempaltes = append(c.TemplateBuilder.Tempaltes, t)
 }

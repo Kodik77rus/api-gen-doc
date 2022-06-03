@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
+
 	"github.com/Kodik77rus/api-gen-doc/internal/config"
 	handlers "github.com/Kodik77rus/api-gen-doc/internal/handelrs"
 )
@@ -27,9 +29,9 @@ func New(c *config.ServerConfig) (*Server, error) {
 }
 
 func (s *Server) Start() error {
-	router := http.NewServeMux()
+	router := httprouter.New()
 
-	router.HandleFunc(apiPrefix+"/gendoc", handlers.GenDocHandler)
+	router.POST(apiPrefix+"/gendoc", handlers.GenDocHandler)
 
 	s.setRouter(router)
 
@@ -40,7 +42,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) setRouter(router *http.ServeMux) {
+func (s *Server) setRouter(router *httprouter.Router) {
 	s.server.Handler = router
 }
 

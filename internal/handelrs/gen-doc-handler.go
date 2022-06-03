@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 var (
 	errEmptyBody      = errors.New("empty body")
 	errEmptyUseField  = errors.New("empty \"use\" field")
 	errEmptyTextField = errors.New("empty \"text\" field")
+	errEmptyURLField  = errors.New("empty \"Url\" field")
+	errNegativeId     = errors.New("negative id")
 )
 
 type unmarshalTypeError struct {
@@ -20,16 +24,13 @@ type unmarshalTypeError struct {
 }
 
 type requestBody struct {
-	Use  string `json:"use"`
-	Text string `json:"text"`
+	Use         string `json:"use"`
+	Text        string `json:"text"`
+	UrlTemplate string `json:"urlTemplate"`
+	RecordID    int    `json:"recordID"`
 }
 
-func GenDocHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		errorResponse(w, http.ErrBodyNotAllowed, http.StatusMethodNotAllowed)
-		return
-	}
-
+func GenDocHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var parsedbody requestBody
 	var unmarshalErr *json.UnmarshalTypeError
 
@@ -74,6 +75,14 @@ func bodyValidator(rb *requestBody) error {
 		return errEmptyBody
 	}
 
+	if rb.RecordID < 0 {
+		return errNegativeId
+	}
+
+	if len(rb.UrlTemplate) == 0 {
+		return errEmptyURLField
+	}
+
 	if len(rb.Text) == 0 {
 		return errEmptyTextField
 	}
@@ -88,8 +97,7 @@ func bodyValidator(rb *requestBody) error {
 func sendRespone(w http.ResponseWriter, b requestBody, httpStatusCode int) {
 	w.WriteHeader(httpStatusCode)
 
-	resp := make(map[string]string)
-	resp = map[string]string{
+	resp := map[string]string{
 		"resultdescription": "Ok",
 		"resultdata":        fmt.Sprintf("%s,  %s", b.Use, b.Use),
 	}
