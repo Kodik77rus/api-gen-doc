@@ -32,7 +32,7 @@ func (e errNotFound) Error() string {
 }
 
 // App config constructor
-func NewConfig() (*AppConfig, error) {
+func LoadConfig() (*AppConfig, error) {
 	var result map[string]interface{}
 	var config AppConfig
 
