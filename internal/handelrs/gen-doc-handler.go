@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"reflect"
 
+	templatebuilder "github.com/Kodik77rus/api-gen-doc/internal/template-builder"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -18,16 +20,16 @@ var (
 	errNegativeId     = errors.New("negative id")
 )
 
-type unmarshalTypeError struct {
-	msg          string
-	unmarshalErr *json.UnmarshalTypeError
-}
-
 type requestBody struct {
 	Use         string `json:"use"`
 	Text        string `json:"text"`
 	UrlTemplate string `json:"urlTemplate"`
 	RecordID    int    `json:"recordID"`
+}
+
+type unmarshalTypeError struct {
+	msg          string
+	unmarshalErr *json.UnmarshalTypeError
 }
 
 func GenDocHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -59,15 +61,51 @@ func GenDocHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		return
 	}
 
+	template, err := getTempalte(parsedbody.UrlTemplate)
+	if err != nil {
+		errorResponse(w, err, http.StatusBadRequest)
+		return
+	}
+
+	prepareTempalte := templatebuilder.NewTemplate(
+		parsedbody.RecordID,
+		&template,
+		parsedbody.Text,
+		parsedbody.Use,
+	)
+
+	if err := templatebuilder.New("../").BuildTemplate(*prepareTempalte); err != nil {
+		errorResponse(w, err, http.StatusBadRequest)
+	}
+
 	sendRespone(w, parsedbody, http.StatusOK)
 }
 
-func (e unmarshalTypeError) Error() string {
-	return fmt.Sprintf("%v %v, expected %v", e.msg, e.unmarshalErr.Field, e.unmarshalErr.Type)
-}
+func getTempalte(url string) (string, error) {
+	c := http.Client{}
 
-func (rb *requestBody) IsStructureEmpty() bool {
-	return reflect.DeepEqual(rb, requestBody{}) //
+	req, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return "", nil
+	}
+
+	req.Header.Add("User-Agent", "hackerman")
+	resp, err := c.Do(req)
+
+	if err != nil {
+		return "", nil
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return "", nil
+	}
+
+	return string(body), nil
 }
 
 func bodyValidator(rb *requestBody) error {
@@ -96,6 +134,7 @@ func bodyValidator(rb *requestBody) error {
 
 func sendRespone(w http.ResponseWriter, b requestBody, httpStatusCode int) {
 	w.WriteHeader(httpStatusCode)
+	w.Header().Set("Content-Type", "application/json")
 
 	resp := map[string]string{
 		"resultdescription": "Ok",
@@ -107,11 +146,22 @@ func sendRespone(w http.ResponseWriter, b requestBody, httpStatusCode int) {
 }
 
 func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatusCode)
 
-	resp := make(map[string]string)
-	resp["message"] = err.Error()
+	resp := map[string]string{
+		"resultdescription": "Bad",
+		"error":             err.Error(),
+	}
 
 	jsonResp, _ := json.Marshal(resp)
 	w.Write(jsonResp)
+}
+
+func (e unmarshalTypeError) Error() string {
+	return fmt.Sprintf("%v %v, expected %v", e.msg, e.unmarshalErr.Field, e.unmarshalErr.Type)
+}
+
+func (rb *requestBody) IsStructureEmpty() bool {
+	return reflect.DeepEqual(rb, requestBody{}) //
 }
