@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"github.com/Kodik77rus/api-gen-doc/internal/config"
+	"github.com/Kodik77rus/api-gen-doc/internal/services"
+	"log"
 	"net/http"
 	"reflect"
 
@@ -32,80 +34,60 @@ type unmarshalTypeError struct {
 	unmarshalErr *json.UnmarshalTypeError
 }
 
-func GenDocHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var parsedbody requestBody
-	var unmarshalErr *json.UnmarshalTypeError
+func GetGenDocHandler() httprouter.Handle {
+	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		var parsedBody requestBody
+		var unmarshalErr *json.UnmarshalTypeError
 
-	if err := decoder.Decode(&parsedbody); err != nil {
-		if errors.As(err, &unmarshalErr) {
-			errorResponse(
-				w,
-				unmarshalTypeError{
-					msg:          "wrong type provided for field",
-					unmarshalErr: unmarshalErr,
-				},
-				http.StatusBadRequest,
-			)
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+
+		if err := decoder.Decode(&parsedBody); err != nil {
+			if errors.As(err, &unmarshalErr) {
+				errorResponse(
+					w,
+					unmarshalTypeError{
+						msg:          "wrong type provided for field",
+						unmarshalErr: unmarshalErr,
+					},
+					http.StatusBadRequest,
+				)
+				return
+			}
+
+			errorResponse(w, err, http.StatusBadRequest)
 			return
 		}
 
-		errorResponse(w, err, http.StatusBadRequest)
-		return
+		if err := bodyValidator(&parsedBody); err != nil {
+			errorResponse(w, err, http.StatusBadRequest)
+			return
+		}
+
+		template, err := services.HttpResponse(parsedBody.UrlTemplate)
+		if err != nil {
+			errorResponse(w, err, http.StatusBadRequest)
+			return
+		}
+
+		prepareTemplate := templatebuilder.NewTemplate(
+			parsedBody.RecordID,
+			&template,
+			parsedBody.Text,
+			parsedBody.Use,
+		)
+
+		if err := templatebuilder.New(conf.TemplateBuilder.WordFolder).BuildTemplate(*prepareTemplate); err != nil {
+			errorResponse(w, err, http.StatusBadRequest)
+		}
+
+		sendResponse(w, parsedBody, http.StatusOK)
 	}
-
-	if err := bodyValidator(&parsedbody); err != nil {
-		errorResponse(w, err, http.StatusBadRequest)
-		return
-	}
-
-	template, err := getTempalte(parsedbody.UrlTemplate)
-	if err != nil {
-		errorResponse(w, err, http.StatusBadRequest)
-		return
-	}
-
-	prepareTempalte := templatebuilder.NewTemplate(
-		parsedbody.RecordID,
-		&template,
-		parsedbody.Text,
-		parsedbody.Use,
-	)
-
-	if err := templatebuilder.New("../").BuildTemplate(*prepareTempalte); err != nil {
-		errorResponse(w, err, http.StatusBadRequest)
-	}
-
-	sendRespone(w, parsedbody, http.StatusOK)
-}
-
-func getTempalte(url string) (string, error) {
-	c := http.Client{}
-
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-		return "", nil
-	}
-
-	req.Header.Add("User-Agent", "hackerman")
-	resp, err := c.Do(req)
-
-	if err != nil {
-		return "", nil
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return "", nil
-	}
-
-	return string(body), nil
 }
 
 func bodyValidator(rb *requestBody) error {
@@ -132,7 +114,7 @@ func bodyValidator(rb *requestBody) error {
 	return nil
 }
 
-func sendRespone(w http.ResponseWriter, b requestBody, httpStatusCode int) {
+func sendResponse(w http.ResponseWriter, b requestBody, httpStatusCode int) {
 	w.WriteHeader(httpStatusCode)
 	w.Header().Set("Content-Type", "application/json")
 

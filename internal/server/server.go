@@ -31,7 +31,7 @@ func New(c *config.ServerConfig) (*Server, error) {
 func (s *Server) Start() error {
 	router := httprouter.New()
 
-	router.POST(apiPrefix+"/gendoc", handlers.GenDocHandler)
+	router.POST(apiPrefix+"/gendoc", handlers.GetGenDocHandler())
 
 	s.setRouter(router)
 
