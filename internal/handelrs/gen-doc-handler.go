@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Kodik77rus/api-gen-doc/internal/config"
-	"github.com/Kodik77rus/api-gen-doc/internal/services"
 	"log"
 	"net/http"
 	"reflect"
-	"strings"
+
+	"github.com/Kodik77rus/api-gen-doc/internal/config"
+	"github.com/Kodik77rus/api-gen-doc/internal/services"
+
+	// "strings"
 
 	templatebuilder "github.com/Kodik77rus/api-gen-doc/internal/template-builder"
 	"github.com/julienschmidt/httprouter"
@@ -76,12 +78,12 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		templateName := strings.Split(parsedBody.UrlTemplate, "/")
+		// templateName := strings.Split(parsedBody.UrlTemplate, "/")
 
 		t := templatebuilder.Template{
-			FolderId:     parsedBody.RecordID,
-			TemplateName: templateName[len(templateName)],
-			Template:     &template,
+			FolderId: parsedBody.RecordID,
+			// TemplateName: templateName[len(templateName)],
+			Template: &template,
 			InsertData: templatebuilder.InsertData{
 				Text: parsedBody.Text,
 				Use:  parsedBody.Use,
@@ -90,6 +92,7 @@ func GetGenDocHandler() httprouter.Handle {
 
 		if err := templatebuilder.New(conf.TemplateBuilder).BuildTemplate(t); err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
+			return
 		}
 
 		sendResponse(w, parsedBody, http.StatusOK)
