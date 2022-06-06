@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"reflect"
+	"strings"
 
 	templatebuilder "github.com/Kodik77rus/api-gen-doc/internal/template-builder"
 	"github.com/julienschmidt/httprouter"
@@ -75,14 +76,19 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		prepareTemplate := templatebuilder.NewTemplate(
-			parsedBody.RecordID,
-			&template,
-			parsedBody.Text,
-			parsedBody.Use,
-		)
+		templateName := strings.Split(parsedBody.UrlTemplate, "/")
 
-		if err := templatebuilder.New(conf.TemplateBuilder.WordFolder).BuildTemplate(*prepareTemplate); err != nil {
+		t := templatebuilder.Template{
+			FolderId:     parsedBody.RecordID,
+			TemplateName: templateName[len(templateName)],
+			Template:     &template,
+			InsertData: templatebuilder.InsertData{
+				Text: parsedBody.Text,
+				Use:  parsedBody.Use,
+			},
+		}
+
+		if err := templatebuilder.New(conf.TemplateBuilder).BuildTemplate(t); err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
 		}
 

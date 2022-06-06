@@ -14,7 +14,7 @@ type ServerConfig struct {
 }
 
 type TemplateBuilder struct {
-	WordFolder string `mapstructure:"WORD_FOLDER"`
+	TemplateFolder string `mapstructure:"TEMPLATE_FOLDER"`
 }
 
 type AppConfig struct {
