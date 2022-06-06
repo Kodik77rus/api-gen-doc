@@ -80,7 +80,6 @@ func GetGenDocHandler() httprouter.Handle {
 		}
 
 		templateName := strings.Split(parsedBody.UrlTemplate, "/")
-		fmt.Print(templateName[len(templateName)-1])
 
 		t := templatebuilder.Template{
 			FolderId:     parsedBody.RecordID,
@@ -134,7 +133,11 @@ func sendResponse(w http.ResponseWriter, b requestBody, httpStatusCode int) {
 		"resultdata":        fmt.Sprintf("%s,  %s", b.Use, b.Use),
 	}
 
-	jsonResp, _ := json.Marshal(resp)
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		errorResponse(w, err, http.StatusInternalServerError)
+	}
+
 	w.Write(jsonResp)
 }
 
@@ -147,7 +150,10 @@ func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
 		"error":             err.Error(),
 	}
 
-	jsonResp, _ := json.Marshal(resp)
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	w.Write(jsonResp)
 }
 

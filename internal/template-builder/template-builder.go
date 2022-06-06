@@ -53,8 +53,6 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 	fileDir := t.generateDirName(wordFolderName)
 	fileName := t.generateFileName(wordFolderName)
 
-	fmt.Printf(fileDir)
-
 	err := os.MkdirAll(fileDir, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -66,9 +64,12 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 	}
 	defer file.Close()
 
-	newTemplate := t.replaceTemplateData()
+	insertData := t.prepareData()
+	for _, v := range insertData {
+		t.inserData(v)
+	}
 
-	_, errr := file.WriteString(*newTemplate)
+	_, errr := file.WriteString(*t.Template.Template)
 	if errr != nil {
 		return nil, errr
 	}
@@ -76,31 +77,34 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 	return file, nil
 }
 
-func (t *TemplateBuilder) replaceTemplateData() *string {
-	var replacedData string
+func (t *TemplateBuilder) inserData(v string) {
+	d := strings.Replace(*t.Template.Template, "_", v, 1)
+	t.setTemplate(&d)
+}
 
-	insertData := make([]string, 4, 4)
+func (t *TemplateBuilder) setTemplate(template *string) {
+	t.Template.Template = template
+}
+
+func (t *TemplateBuilder) prepareData() []string {
+	var insertData []string
+
 	useData := strings.Split(t.Template.InsertData.Use, ",")
 
-	for i, v := range useData {
-		if i == 0 {
-			insertData[i] = t.Template.InsertData.Text
-		}
-		insertData[i+1] = v
+	insertData = append(insertData, t.Template.InsertData.Text)
+
+	for i := 0; i < 3; i++ {
+		insertData = append(insertData, useData[i])
 	}
 
-	for _, v := range insertData {
-		replacedData = strings.Replace(*t.Template.Template, "_", v, 1)
-	}
-
-	return &replacedData
+	return insertData
 }
 
 func (t *TemplateBuilder) generateDirName(docType string) string {
 	return fmt.Sprint(
-		t.Config.TemplateFolder, //../template
+		t.Config.TemplateFolder,
 		"/",
-		t.Template.TemplateName, //
+		t.Template.TemplateName,
 		docType,
 		"/",
 		t.Template.FolderId,
