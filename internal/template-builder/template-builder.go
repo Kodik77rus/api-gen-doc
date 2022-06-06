@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/scanner"
 	"time"
 
 	"github.com/Kodik77rus/api-gen-doc/internal/config"
@@ -34,13 +33,14 @@ type InsertData struct {
 	Use  string
 }
 
-func New(c config.TemplateBuilder) *TemplateBuilder {
+func New(c config.TemplateBuilder, t Template) *TemplateBuilder {
 	return &TemplateBuilder{
-		Config: c,
+		Config:   c,
+		Template: t,
 	}
 }
 
-func (t *TemplateBuilder) BuildTemplate(template Template) error {
+func (t *TemplateBuilder) BuildTemplate() error {
 	_, err := t.createWordFile()
 	if err != nil {
 		return err
@@ -53,12 +53,14 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 	fileDir := t.generateDirName(wordFolderName)
 	fileName := t.generateFileName(wordFolderName)
 
+	fmt.Printf(fileDir)
+
 	err := os.MkdirAll(fileDir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.Create(fileDir + fileName)
+	file, err := os.Create(fileDir + "/" + fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -75,44 +77,32 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 }
 
 func (t *TemplateBuilder) replaceTemplateData() *string {
-	var s scanner.Scanner
-	var newTemplate string
+	var replacedData string
 
-	prepareUseDate := strings.Split(t.Template.InsertData.Use, ",")
-	count := 1
+	insertData := make([]string, 4, 4)
+	useData := strings.Split(t.Template.InsertData.Use, ",")
 
-	s.Init(strings.NewReader(*t.Template.Template))
-
-	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
-		txt := s.TokenText()
-		if strings.Contains(txt, "_") {
-			switch count {
-			case 1:
-				txt = strings.Replace(txt, "_", t.Template.InsertData.Text, 1)
-				count++
-			case 2:
-				txt = strings.Replace(txt, "_", prepareUseDate[0], 1)
-				count++
-			case 3:
-				txt = strings.Replace(txt, "_", prepareUseDate[1], 1)
-				count++
-			case 4:
-				txt = strings.Replace(txt, "_", prepareUseDate[2], 1)
-				count++
-			}
+	for i, v := range useData {
+		if i == 0 {
+			insertData[i] = t.Template.InsertData.Text
 		}
-		newTemplate += txt
+		insertData[i+1] = v
 	}
 
-	return &newTemplate
+	for _, v := range insertData {
+		replacedData = strings.Replace(*t.Template.Template, "_", v, 1)
+	}
+
+	return &replacedData
 }
 
 func (t *TemplateBuilder) generateDirName(docType string) string {
 	return fmt.Sprint(
-		t.Config.TemplateFolder,
+		t.Config.TemplateFolder, //../template
 		"/",
-		t.Template.TemplateName,
+		t.Template.TemplateName, //
 		docType,
+		"/",
 		t.Template.FolderId,
 	)
 }
