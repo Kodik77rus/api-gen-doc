@@ -96,12 +96,16 @@ func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
 
 	err := os.MkdirAll(word.dir, os.ModePerm)
 	if err != nil {
-		return nil, err
+		return nil, createWordFileErr{
+			err: err,
+		}
 	}
 
 	file, err := os.Create(word.pathToFile)
 	if err != nil {
-		return nil, err
+		return nil, createWordFileErr{
+			err: err,
+		}
 	}
 	defer file.Close()
 
@@ -112,7 +116,9 @@ func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
 
 	_, e := file.WriteString(*t.Template.Template)
 	if e != nil {
-		return nil, e
+		return nil, createWordFileErr{
+			err: err,
+		}
 	}
 
 	return word, nil
@@ -137,31 +143,43 @@ func (t *TemplateBuilder) convertWordToPdf(wordFile *wordDoc) (*pdfDoc, error) {
 
 	fw, err := writer.CreateFormFile("filename", wordFile.pathToFile)
 	if err != nil {
-		return nil, err
+		return nil, convertWordToPdf{
+			err: err,
+		}
 	}
 
 	f, err := os.Open(wordFile.pathToFile)
 	if err != nil {
-		return nil, err
+		return nil, convertWordToPdf{
+			err: err,
+		}
 	}
 	defer f.Close()
 
 	_, err = io.Copy(fw, f)
 	if err != nil {
-		return nil, err
+		return nil, convertWordToPdf{
+			err: err,
+		}
 	}
 
 	if err := writer.WriteField("o", wordFile.pathToFile); err != nil {
-		return nil, err
+		return nil, convertWordToPdf{
+			err: err,
+		}
 	}
 
 	if err := writer.Close(); err != nil {
-		return nil, err
+		return nil, convertWordToPdf{
+			err: err,
+		}
 	}
 
 	pdfFile, err := services.MultipartResponse(writer, body)
 	if err != nil {
-		return nil, err
+		return nil, convertWordToPdf{
+			err: err,
+		}
 	}
 
 	return newPdfDoc(wordFile.pathToFile, &pdfFile), nil
@@ -170,18 +188,24 @@ func (t *TemplateBuilder) convertWordToPdf(wordFile *wordDoc) (*pdfDoc, error) {
 func (t *TemplateBuilder) savePdf(pdf *pdfDoc) error {
 	err := os.MkdirAll(pdf.dir, os.ModePerm)
 	if err != nil {
-		return err
+		return savePdf{
+			err: err,
+		}
 	}
 
 	file, err := os.Create(pdf.pathToFile)
 	if err != nil {
-		return err
+		return savePdf{
+			err: err,
+		}
 	}
 	defer file.Close()
 
 	_, e := file.WriteString(*pdf.content)
 	if e != nil {
-		return e
+		return savePdf{
+			err: e,
+		}
 	}
 
 	return nil
