@@ -12,8 +12,6 @@ import (
 	"github.com/Kodik77rus/api-gen-doc/internal/config"
 	"github.com/Kodik77rus/api-gen-doc/internal/services"
 
-	// "strings"
-
 	templatebuilder "github.com/Kodik77rus/api-gen-doc/internal/template-builder"
 	"github.com/julienschmidt/httprouter"
 )
@@ -27,16 +25,11 @@ var (
 	errBadUseData     = errors.New("field \"use\" must consist of 3 values separated by commas")
 )
 
-type requestBody struct {
+type genDocBody struct {
 	Use         string `json:"use"`
 	Text        string `json:"text"`
 	UrlTemplate string `json:"urlTemplate"`
 	RecordID    int    `json:"recordID"`
-}
-
-type unmarshalTypeError struct {
-	msg          string
-	unmarshalErr *json.UnmarshalTypeError
 }
 
 func GetGenDocHandler() httprouter.Handle {
@@ -46,13 +39,13 @@ func GetGenDocHandler() httprouter.Handle {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		var parsedBody requestBody
+		var body genDocBody
 		var unmarshalErr *json.UnmarshalTypeError
 
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 
-		if err := decoder.Decode(&parsedBody); err != nil {
+		if err := decoder.Decode(&body); err != nil {
 			if errors.As(err, &unmarshalErr) {
 				errorResponse(
 					w,
@@ -69,30 +62,30 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		if err := bodyValidator(&parsedBody); err != nil {
+		if err := bodyValidator(&body); err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
 			return
 		}
 
-		template, err := services.HttpResponse(parsedBody.UrlTemplate)
+		template, err := services.HttpResponse(body.UrlTemplate)
 		if err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
 			return
 		}
 
-		templateName := strings.Split(parsedBody.UrlTemplate, "/")
+		templateName := strings.Split(body.UrlTemplate, "/")
 		if len(templateName) != 3 {
 			errorResponse(w, errBadUseData, http.StatusBadRequest)
 			return
 		}
 
 		t := templatebuilder.Template{
-			FolderId:     parsedBody.RecordID,
+			FolderId:     body.RecordID,
 			TemplateName: templateName[len(templateName)-1],
 			Template:     &template,
 			InsertData: templatebuilder.InsertData{
-				Text: parsedBody.Text,
-				Use:  parsedBody.Use,
+				Text: body.Text,
+				Use:  body.Use,
 			},
 		}
 
@@ -101,11 +94,11 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		sendResponse(w, parsedBody, http.StatusOK)
+		sendResponse(w, body, http.StatusOK)
 	}
 }
 
-func bodyValidator(rb *requestBody) error {
+func bodyValidator(rb *genDocBody) error {
 	if rb.IsStructureEmpty() {
 		return errEmptyBody
 	}
@@ -129,7 +122,7 @@ func bodyValidator(rb *requestBody) error {
 	return nil
 }
 
-func sendResponse(w http.ResponseWriter, b requestBody, httpStatusCode int) {
+func sendResponse(w http.ResponseWriter, b genDocBody, httpStatusCode int) {
 	w.WriteHeader(httpStatusCode)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -163,10 +156,6 @@ func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
 	w.Write(jsonResp)
 }
 
-func (e unmarshalTypeError) Error() string {
-	return fmt.Sprintf("%v %v, expected %v", e.msg, e.unmarshalErr.Field, e.unmarshalErr.Type)
-}
-
-func (rb *requestBody) IsStructureEmpty() bool {
-	return reflect.DeepEqual(rb, requestBody{}) //
+func (rb *genDocBody) IsStructureEmpty() bool {
+	return reflect.DeepEqual(rb, genDocBody{}) //
 }
