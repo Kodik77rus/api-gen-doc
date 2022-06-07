@@ -1,8 +1,13 @@
 package templatebuilder
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/Kodik77rus/api-gen-doc/internal/services"
+	"io"
+	"mime/multipart"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -10,9 +15,6 @@ import (
 )
 
 const (
-	wordFolderName = "/word"
-	pdfFolderName  = "/pdf"
-
 	timeFormat = "2006-01-02 15:04:05"
 )
 
@@ -33,6 +35,17 @@ type InsertData struct {
 	Use  string
 }
 
+type wordDoc struct {
+	dir        string
+	pathToFile string
+}
+
+type pdfDoc struct {
+	dir        string
+	pathToFile string
+	content    *string
+}
+
 func New(c config.TemplateBuilder, t Template) *TemplateBuilder {
 	return &TemplateBuilder{
 		Config:   c,
@@ -40,25 +53,66 @@ func New(c config.TemplateBuilder, t Template) *TemplateBuilder {
 	}
 }
 
+func newWordDoc(t *TemplateBuilder) *wordDoc {
+	fullPath := fmt.Sprint(
+		t.Config.TemplateFolder,
+		"/",
+		t.Template.TemplateName,
+		"/",
+		t.Template.FolderId,
+		"/word/",
+		time.Now().Format(timeFormat),
+		".doc",
+	)
+
+	dir, _ := filepath.Split(fullPath)
+
+	return &wordDoc{
+		dir:        dir,
+		pathToFile: fullPath,
+	}
+}
+
+func newPdfDoc(wordFileName string, content *string) *pdfDoc {
+	replacer := strings.NewReplacer("word", "pdf", ".doc", ".pdf")
+	path := replacer.Replace(wordFileName)
+
+	dir, _ := filepath.Split(path)
+
+	return &pdfDoc{
+		dir:        dir,
+		pathToFile: path,
+		content:    content,
+	}
+}
+
 func (t *TemplateBuilder) BuildTemplate() error {
-	_, err := t.createWordFile()
+	wordFile, err := t.createWordFile()
 	if err != nil {
+		return err
+	}
+
+	pdfFile, err := t.convertWordToPdf(wordFile)
+	if err != nil {
+		return err
+	}
+
+	if err := t.savePdf(pdfFile); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (t *TemplateBuilder) createWordFile() (*os.File, error) {
-	fileDir := t.generateDirName(wordFolderName)
-	fileName := t.generateFileName(wordFolderName)
+func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
+	word := newWordDoc(t)
 
-	err := os.MkdirAll(fileDir, os.ModePerm)
+	err := os.MkdirAll(word.dir, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.Create(fileDir + "/" + fileName)
+	file, err := os.Create(word.pathToFile)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +128,63 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 		return nil, e
 	}
 
-	return file, nil
+	return word, nil
+}
+
+func (t *TemplateBuilder) convertWordToPdf(wordFile *wordDoc) (*pdfDoc, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	fw, err := writer.CreateFormFile("filename", wordFile.pathToFile)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := os.Open(wordFile.pathToFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(fw, f)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := writer.WriteField("o", wordFile.pathToFile); err != nil {
+		return nil, err
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	pdfFile, err := services.MultipartResponse(writer, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return newPdfDoc(wordFile.pathToFile, &pdfFile), nil
+}
+
+func (t *TemplateBuilder) savePdf(pdf *pdfDoc) error {
+	err := os.MkdirAll(pdf.dir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(pdf.pathToFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, e := file.WriteString(*pdf.content)
+	if e != nil {
+		return e
+	}
+
+	return nil
 }
 
 func (t *TemplateBuilder) insertData(v string) {
@@ -98,34 +208,4 @@ func (t *TemplateBuilder) prepareData() []string {
 	}
 
 	return insertData
-}
-
-func (t *TemplateBuilder) generateDirName(docType string) string {
-	return fmt.Sprint(
-		t.Config.TemplateFolder,
-		"/",
-		t.Template.TemplateName,
-		docType,
-		"/",
-		t.Template.FolderId,
-	)
-}
-
-func (t *TemplateBuilder) generateFileName(docType string) string {
-	currentTime := time.Now()
-
-	switch docType {
-	case wordFolderName:
-		return fmt.Sprint(
-			currentTime.Format(timeFormat),
-			".doc",
-		)
-	case pdfFolderName:
-		return fmt.Sprint(
-			currentTime.Format(timeFormat),
-			".pdf",
-		)
-	default:
-		return ""
-	}
 }
