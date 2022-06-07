@@ -43,7 +43,7 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		if err := bodyValidator(&body); err != nil {
+		if err := genDocBodyValidator(&body); err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
 			return
 		}
@@ -84,7 +84,7 @@ func GetGenDocHandler() httprouter.Handle {
 	}
 }
 
-func bodyValidator(rb *genDocBody) error {
+func genDocBodyValidator(rb *genDocBody) error {
 	if rb.IsStructureEmpty() {
 		return errEmptyBody
 	}
