@@ -53,6 +53,24 @@ func New(c config.TemplateBuilder, t Template) *TemplateBuilder {
 	}
 }
 
+func (t *TemplateBuilder) BuildTemplate() error {
+	wordFile, err := t.createWordFile()
+	if err != nil {
+		return err
+	}
+
+	pdfFile, err := t.convertWordToPdf(wordFile)
+	if err != nil {
+		return err
+	}
+
+	if err := t.savePdf(pdfFile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func newWordDoc(t *TemplateBuilder) *wordDoc {
 	fullPath := fmt.Sprint(
 		t.Config.TemplateFolder,
@@ -71,37 +89,6 @@ func newWordDoc(t *TemplateBuilder) *wordDoc {
 		dir:        dir,
 		pathToFile: fullPath,
 	}
-}
-
-func newPdfDoc(wordFileName string, content *string) *pdfDoc {
-	replacer := strings.NewReplacer("word", "pdf", ".doc", ".pdf")
-	path := replacer.Replace(wordFileName)
-
-	dir, _ := filepath.Split(path)
-
-	return &pdfDoc{
-		dir:        dir,
-		pathToFile: path,
-		content:    content,
-	}
-}
-
-func (t *TemplateBuilder) BuildTemplate() error {
-	wordFile, err := t.createWordFile()
-	if err != nil {
-		return err
-	}
-
-	pdfFile, err := t.convertWordToPdf(wordFile)
-	if err != nil {
-		return err
-	}
-
-	if err := t.savePdf(pdfFile); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
@@ -129,6 +116,19 @@ func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
 	}
 
 	return word, nil
+}
+
+func newPdfDoc(wordFileName string, content *string) *pdfDoc {
+	replacer := strings.NewReplacer("word", "pdf", ".doc", ".pdf")
+	path := replacer.Replace(wordFileName)
+
+	dir, _ := filepath.Split(path)
+
+	return &pdfDoc{
+		dir:        dir,
+		pathToFile: path,
+		content:    content,
+	}
 }
 
 func (t *TemplateBuilder) convertWordToPdf(wordFile *wordDoc) (*pdfDoc, error) {
