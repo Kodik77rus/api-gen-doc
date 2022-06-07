@@ -1,16 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"net/http"
-	"reflect"
-	"strings"
-
 	"github.com/Kodik77rus/api-gen-doc/internal/config"
 	"github.com/Kodik77rus/api-gen-doc/internal/services"
+	"log"
+	"net/http"
 
 	templatebuilder "github.com/Kodik77rus/api-gen-doc/internal/template-builder"
 	"github.com/julienschmidt/httprouter"
@@ -40,24 +36,9 @@ func GetGenDocHandler() httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		var body genDocBody
-		var unmarshalErr *json.UnmarshalTypeError
 
-		decoder := json.NewDecoder(r.Body)
-		decoder.DisallowUnknownFields()
-
-		if err := decoder.Decode(&body); err != nil {
-			if errors.As(err, &unmarshalErr) {
-				errorResponse(
-					w,
-					unmarshalTypeError{
-						msg:          "wrong type provided for field",
-						unmarshalErr: unmarshalErr,
-					},
-					http.StatusBadRequest,
-				)
-				return
-			}
-
+		body, err := parseBody(body, r.Body)
+		if err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
 			return
 		}
@@ -73,11 +54,7 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		templateName := strings.Split(body.UrlTemplate, "/")
-		if len(templateName) != 3 {
-			errorResponse(w, errBadUseData, http.StatusBadRequest)
-			return
-		}
+		templateName := split(body.UrlTemplate, "/")
 
 		t := templatebuilder.Template{
 			FolderId:     body.RecordID,
@@ -89,12 +66,21 @@ func GetGenDocHandler() httprouter.Handle {
 			},
 		}
 
-		if err := templatebuilder.New(conf.TemplateBuilder, t).BuildTemplate(); err != nil {
+		if err := templatebuilder.
+			New(conf.TemplateBuilder, t).
+			BuildTemplate(); err != nil {
 			errorResponse(w, err, http.StatusBadRequest)
 			return
 		}
 
-		sendResponse(w, body, http.StatusOK)
+		resp := map[string]string{
+			"resultdescription": "Ok",
+			"resultdata": fmt.Sprintf(
+				"%s, %s", body.Text, body.Use,
+			),
+		}
+
+		sendResponse(w, resp, http.StatusOK)
 	}
 }
 
@@ -119,43 +105,10 @@ func bodyValidator(rb *genDocBody) error {
 		return errEmptyUseField
 	}
 
+	validUseData := split(rb.Use, ",")
+	if len(validUseData) != 3 {
+		return errBadUseData
+	}
+
 	return nil
-}
-
-func sendResponse(w http.ResponseWriter, b genDocBody, httpStatusCode int) {
-	w.WriteHeader(httpStatusCode)
-	w.Header().Set("Content-Type", "application/json")
-
-	resp := map[string]string{
-		"resultdescription": "Ok",
-		"resultdata":        fmt.Sprintf("%s, %s, %s", b.Text, b.Use, b.Use),
-	}
-
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		errorResponse(w, err, http.StatusInternalServerError)
-	}
-
-	w.Write(jsonResp)
-}
-
-func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(httpStatusCode)
-
-	resp := map[string]string{
-		"resultdescription": "Bad",
-		"error":             err.Error(),
-	}
-
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	w.Write(jsonResp)
-}
-
-func (rb *genDocBody) IsStructureEmpty() bool {
-	return reflect.DeepEqual(rb, genDocBody{}) //
 }
