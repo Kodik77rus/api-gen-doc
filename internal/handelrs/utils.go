@@ -11,7 +11,11 @@ import (
 )
 
 type jsonUnmarshalSchemas interface {
-	genDocBody
+	genDocBody | findDocBody
+}
+
+type validationSchema interface {
+	jsonUnmarshalSchemas
 }
 
 type unmarshalTypeError struct {
@@ -69,8 +73,9 @@ func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
 	w.Write(jsonResp)
 }
 
-func (rb *genDocBody) IsStructureEmpty() bool {
-	return reflect.DeepEqual(rb, genDocBody{}) //
+func isStructureEmpty[T validationSchema](strc T) bool {
+	structSchema := new(T)
+	return reflect.DeepEqual(strc, structSchema)
 }
 
 func split(str, separator string) []string {

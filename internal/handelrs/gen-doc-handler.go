@@ -85,7 +85,7 @@ func GetGenDocHandler() httprouter.Handle {
 }
 
 func genDocBodyValidator(rb *genDocBody) error {
-	if rb.IsStructureEmpty() {
+	if isStructureEmpty(*rb) {
 		return errEmptyBody
 	}
 
