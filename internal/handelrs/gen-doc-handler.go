@@ -50,7 +50,7 @@ func GetGenDocHandler() httprouter.Handle {
 
 		template, err := services.HttpResponse(body.UrlTemplate)
 		if err != nil {
-			errorResponse(w, err, http.StatusBadRequest)
+			errorResponse(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -69,7 +69,7 @@ func GetGenDocHandler() httprouter.Handle {
 		if err := templatebuilder.
 			New(conf.TemplateBuilder, t).
 			BuildTemplate(); err != nil {
-			errorResponse(w, err, http.StatusBadRequest)
+			errorResponse(w, err, http.StatusInternalServerError)
 			return
 		}
 
