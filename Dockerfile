@@ -1,15 +1,23 @@
 #build stage
 FROM golang:alpine AS builder
 RUN apk add --no-cache git
-WORKDIR /go/src/app
-COPY . .
-RUN go get -d -v ./...
-RUN go build -o /go/bin/app -v ./...
+WORKDIR /app
+COPY ["go.mod", "go.sum", ".env", "./" ]
 
-#final stage
+RUN go mod download
+
+COPY . *.go ./
+
+RUN go build -o ./api-gen-doc ./cmd/api-gen-doc.go
+
+
+## Deploy
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-COPY --from=builder /go/bin/app /app
-ENTRYPOINT /app
-LABEL Name=apigendoc Version=0.0.1
-EXPOSE 8080
+
+WORKDIR /
+
+COPY --from=builder /app/api-gen-doc /api-gen-doc
+COPY --from=builder /app/.env /.env
+
+ENTRYPOINT ["/api-gen-doc"]

@@ -12,4 +12,3 @@ services:
   # for convert word to pdf
   gotenberg:
     image: gotenberg/gotenberg:7
-    ports: -3000:3000
