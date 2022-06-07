@@ -24,6 +24,7 @@ var (
 	errEmptyTextField = errors.New("empty \"text\" field")
 	errEmptyURLField  = errors.New("empty \"Url\" field")
 	errNegativeId     = errors.New("negative id")
+	errBadUseData     = errors.New("field \"use\" must consist of 3 values separated by commas")
 )
 
 type requestBody struct {
@@ -80,6 +81,10 @@ func GetGenDocHandler() httprouter.Handle {
 		}
 
 		templateName := strings.Split(parsedBody.UrlTemplate, "/")
+		if len(templateName) != 3 {
+			errorResponse(w, errBadUseData, http.StatusBadRequest)
+			return
+		}
 
 		t := templatebuilder.Template{
 			FolderId:     parsedBody.RecordID,
@@ -130,7 +135,7 @@ func sendResponse(w http.ResponseWriter, b requestBody, httpStatusCode int) {
 
 	resp := map[string]string{
 		"resultdescription": "Ok",
-		"resultdata":        fmt.Sprintf("%s,  %s", b.Use, b.Use),
+		"resultdata":        fmt.Sprintf("%s, %s, %s", b.Text, b.Use, b.Use),
 	}
 
 	jsonResp, err := json.Marshal(resp)
