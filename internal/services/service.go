@@ -28,6 +28,7 @@ func MultipartResponse(writer *multipart.Writer, bufBody io.Reader) (string, err
 			err: err,
 		}
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		return "", convertServiceRespError{
@@ -42,7 +43,6 @@ func MultipartResponse(writer *multipart.Writer, bufBody io.Reader) (string, err
 			err: err,
 		}
 	}
-	defer resp.Body.Close()
 
 	return string(body), nil
 }
