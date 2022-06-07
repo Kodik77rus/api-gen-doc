@@ -66,18 +66,18 @@ func (t *TemplateBuilder) createWordFile() (*os.File, error) {
 
 	insertData := t.prepareData()
 	for _, v := range insertData {
-		t.inserData(v)
+		t.insertData(v)
 	}
 
-	_, errr := file.WriteString(*t.Template.Template)
-	if errr != nil {
-		return nil, errr
+	_, e := file.WriteString(*t.Template.Template)
+	if e != nil {
+		return nil, e
 	}
 
 	return file, nil
 }
 
-func (t *TemplateBuilder) inserData(v string) {
+func (t *TemplateBuilder) insertData(v string) {
 	d := strings.Replace(*t.Template.Template, "_", v, 1)
 	t.setTemplate(&d)
 }

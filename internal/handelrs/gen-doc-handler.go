@@ -154,6 +154,7 @@ func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+
 	w.Write(jsonResp)
 }
 
