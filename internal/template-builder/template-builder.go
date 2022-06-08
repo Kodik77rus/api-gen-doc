@@ -78,20 +78,19 @@ func (t *TemplateBuilder) BuildTemplate() error {
 }
 
 func newWordDoc(t *TemplateBuilder) *wordDoc {
-	pathTofile := filepath.Join(
+	pathToFile := filepath.Join(
 		t.Config.TemplateFolder,
 		t.Template.TemplateName,
 		strconv.Itoa(t.Template.FolderId),
 		wordFolderName,
-		time.Now().Format(timeFormat),
-		wordFileFormat,
+		time.Now().Format(timeFormat)+wordFileFormat,
 	)
 
-	dir, _ := filepath.Split(pathTofile)
+	dir, _ := filepath.Split(pathToFile)
 
 	return &wordDoc{
 		dir:        dir,
-		pathToFile: pathTofile,
+		pathToFile: pathToFile,
 	}
 }
 
