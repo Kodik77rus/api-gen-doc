@@ -54,11 +54,9 @@ func GetGenDocHandler() httprouter.Handle {
 			return
 		}
 
-		templateName := split(body.UrlTemplate, "/")
-
 		t := templatebuilder.Template{
 			FolderId:     body.RecordID,
-			TemplateName: templateName[len(templateName)-1],
+			TemplateName: getTemplateName(body.UrlTemplate),
 			Template:     &template,
 			InsertData: templatebuilder.InsertData{
 				Text: body.Text,

@@ -81,3 +81,8 @@ func isStructureEmpty[T validationSchema](strc T) bool {
 func split(str, separator string) []string {
 	return strings.Split(str, separator)
 }
+
+func getTemplateName(url string) string {
+	templateName := split(url, "/")
+	return templateName[len(templateName)-1]
+}
