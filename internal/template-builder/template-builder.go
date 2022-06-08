@@ -2,12 +2,12 @@ package templatebuilder
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/Kodik77rus/api-gen-doc/internal/services"
 	"io"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +16,12 @@ import (
 
 const (
 	timeFormat = "2006-01-02 15:04:05"
+
+	wordFolderName = "word"
+	wordFileFormat = ".doc"
+
+	pdfFolderName = "pdf"
+	pdfFileFormat = ".pdf"
 )
 
 type TemplateBuilder struct {
@@ -72,22 +78,20 @@ func (t *TemplateBuilder) BuildTemplate() error {
 }
 
 func newWordDoc(t *TemplateBuilder) *wordDoc {
-	fullPath := fmt.Sprint(
+	pathTofile := filepath.Join(
 		t.Config.TemplateFolder,
-		"/",
 		t.Template.TemplateName,
-		"/",
-		t.Template.FolderId,
-		"/word/",
+		strconv.Itoa(t.Template.FolderId),
+		wordFolderName,
 		time.Now().Format(timeFormat),
-		".doc",
+		wordFileFormat,
 	)
 
-	dir, _ := filepath.Split(fullPath)
+	dir, _ := filepath.Split(pathTofile)
 
 	return &wordDoc{
 		dir:        dir,
-		pathToFile: fullPath,
+		pathToFile: pathTofile,
 	}
 }
 
@@ -125,7 +129,11 @@ func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
 }
 
 func newPdfDoc(wordFileName string, content *string) *pdfDoc {
-	replacer := strings.NewReplacer("word", "pdf", ".doc", ".pdf")
+	replacer := strings.NewReplacer(
+		wordFolderName, pdfFolderName,
+		wordFileFormat, pdfFileFormat,
+	)
+
 	path := replacer.Replace(wordFileName)
 
 	dir, _ := filepath.Split(path)
