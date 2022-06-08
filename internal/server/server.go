@@ -18,7 +18,7 @@ type Server struct {
 }
 
 func New(c *config.ServerConfig) (*Server, error) {
-	server, err := configirateServer(c)
+	server, err := serverConfiguration(c)
 	if err != nil {
 		return nil, err
 	}
@@ -28,10 +28,12 @@ func New(c *config.ServerConfig) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(templateFolder string) error {
 	router := httprouter.New()
 
 	router.POST(apiPrefix+"/gendoc", handlers.GetGenDocHandler())
+
+	router.ServeFiles("/download/*filepath", http.Dir(templateFolder))
 
 	s.setRouter(router)
 
@@ -46,13 +48,13 @@ func (s *Server) setRouter(router *httprouter.Router) {
 	s.server.Handler = router
 }
 
-func configirateServer(c *config.ServerConfig) (*http.Server, error) {
-	rt, err := parceStingToInt(c.ReadTimeout)
+func serverConfiguration(c *config.ServerConfig) (*http.Server, error) {
+	rt, err := parseStingToInt(c.ReadTimeout)
 	if err != nil {
 		return nil, err
 	}
 
-	wrt, err := parceStingToInt(c.WriteTimeout)
+	wrt, err := parseStingToInt(c.WriteTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +66,7 @@ func configirateServer(c *config.ServerConfig) (*http.Server, error) {
 	}, nil
 }
 
-func parceStingToInt(str string) (int, error) {
+func parseStingToInt(str string) (int, error) {
 	int, err := strconv.Atoi(str)
 	if err != nil {
 		return 0, err

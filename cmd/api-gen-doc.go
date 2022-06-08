@@ -1,10 +1,9 @@
 package main
 
 import (
-	"log"
-
 	"github.com/Kodik77rus/api-gen-doc/internal/config"
 	"github.com/Kodik77rus/api-gen-doc/internal/server"
+	"log"
 )
 
 func main() {
@@ -18,5 +17,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Fatal(server.Start())
+	server.Start(appConf.TemplateBuilder.TemplateFolder)
 }
