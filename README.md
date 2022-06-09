@@ -1,8 +1,11 @@
 # api-gen-doc
+
 server witch generates docs (pdf, word) by template
 
 Создание шаблона
+
 ## POST `http://localhost:8080/api/gendoc`
+
 Отправляем
 
 ```json
@@ -18,13 +21,15 @@ server witch generates docs (pdf, word) by template
 
 ```json
 {
-	"resultdata": "1, Иван,Иванов,Иванович",
-	"resultdescription": "Ok"
+  "resultdata": "1, Иван,Иванов,Иванович",
+  "resultdescription": "Ok"
 }
-
 ```
+
 Поиск документов
+
 ## POST `http://localhost:8080/api/find`
+
 Отправляем
 
 ```json
@@ -38,19 +43,19 @@ server witch generates docs (pdf, word) by template
 
 ```json
 {
-   "pdf": [
-	"http://localhost:8080/api/download/forma_025u.xml/1/pdf/2022-06-09%2004:16:55.pdf"
-],
-   "word": [
-         "http://localhost:8080/api/download/forma_025u.xml/1/word/2022-06-09%2004:16:55.doc"
-]
+  "pdf": [
+    "http://localhost:8080/api/download/forma_025u.xml/1/pdf/2022-06-09%2004:16:55.pdf"
+  ],
+  "word": [
+    "http://localhost:8080/api/download/forma_025u.xml/1/word/2022-06-09%2004:16:55.doc"
+  ]
 }
 ```
 
 Получаем word
+
 ## GET `http://localhost:8080/api/download/forma_025u.xml/1/word/2022-06-09%2004:16:55.doc`
 
 Получаем pdf
+
 ## GET `http://localhost:8080/api/download/forma_025u.xml/1/pdf/2022-06-09%2004:16:55.pdf`
-
-

@@ -6,13 +6,15 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 )
 
-const downloadFileRoute = "http://localhost:8080/api/download"
+const downloadFileRoute = "http://localhost:8080/api/download/"
 
 var (
 	templateDir = []string{"word", "pdf"}
@@ -92,17 +94,12 @@ func (a *asyncDirReader) readDir(pathToDir string, wg *sync.WaitGroup) {
 
 	fls := new([]string)
 
-	docDir := path.Base(pathToDir)
 	for _, file := range files {
-		*fls = append(*fls,
-			generateFilePath(
-				downloadFileRoute,
-				docDir,
-				file.Name()),
-		)
+		*fls = append(*fls, generateDownloadPath(
+			generateFilePath(pathToDir, file.Name())))
 	}
 
-	switch docDir {
+	switch path.Base(pathToDir) {
 	case templateDir[0]:
 		a.setWordFiles(fls)
 	case templateDir[1]:
@@ -127,6 +124,12 @@ func (a *asyncDirReader) printResult() map[string][]string {
 		templateDir[0]: *a.wordFiles,
 		templateDir[1]: *a.pdfFiles,
 	}
+}
+
+func generateDownloadPath(fileName string) string {
+	urlStr, _ := url.Parse(
+		downloadFileRoute + fileName)
+	return strings.Replace(urlStr.String(), "../template/", "", 1)
 }
 
 func findDocBodyValidator(b *findDocBody) error {
