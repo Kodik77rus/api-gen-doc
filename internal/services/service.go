@@ -6,11 +6,16 @@ import (
 	"mime/multipart"
 	"net/http"
 	url2 "net/url"
+	"time"
 )
+
+func init() {
+	c = &http.Client{Timeout: time.Duration(5) * time.Second}
+}
 
 const convertWordToPdfUrl = "http://localhost:3000/forms/libreoffice/convert"
 
-var c http.Client
+var c *http.Client
 
 func MultipartResponse(writer *multipart.Writer, bufBody io.Reader) (string, error) {
 	req, err := http.NewRequest("POST", convertWordToPdfUrl, bufBody)
