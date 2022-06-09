@@ -32,8 +32,9 @@ func (s *Server) Start(templateFolder string) error {
 	router := httprouter.New()
 
 	router.POST(apiPrefix+"/gendoc", handlers.GetGenDocHandler())
+	router.POST(apiPrefix+"/find", handlers.FindDocs())
 
-	router.ServeFiles("/download/*filepath", http.Dir(templateFolder))
+	router.ServeFiles(apiPrefix+"/download/*filepath", http.Dir(templateFolder))
 
 	s.setRouter(router)
 

@@ -5,9 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strings"
+)
+
+var (
+	unmarshalErr *json.UnmarshalTypeError
+	pathError    *fs.PathError
 )
 
 type jsonUnmarshalSchemas interface {
@@ -18,6 +25,10 @@ type validationSchema interface {
 	jsonUnmarshalSchemas
 }
 
+type responseBody interface {
+	map[string]string | map[string][]string
+}
+
 type unmarshalTypeError struct {
 	msg          string
 	unmarshalErr *json.UnmarshalTypeError
@@ -26,8 +37,6 @@ type unmarshalTypeError struct {
 func (e unmarshalTypeError) Error() string {
 	return fmt.Sprintf("%v %v, expected %v", e.msg, e.unmarshalErr.Field, e.unmarshalErr.Type)
 }
-
-var unmarshalErr *json.UnmarshalTypeError
 
 func parseBody[T jsonUnmarshalSchemas](schema T, body io.ReadCloser) (T, error) {
 	decoder := json.NewDecoder(body)
@@ -44,7 +53,7 @@ func parseBody[T jsonUnmarshalSchemas](schema T, body io.ReadCloser) (T, error) 
 	return schema, nil
 }
 
-func sendResponse(w http.ResponseWriter, respBody map[string]string, httpStatusCode int) {
+func sendResponse[T responseBody](w http.ResponseWriter, respBody T, httpStatusCode int) {
 	w.WriteHeader(httpStatusCode)
 	w.Header().Set("Content-Type", "application/json")
 
@@ -73,13 +82,17 @@ func errorResponse(w http.ResponseWriter, err error, httpStatusCode int) {
 	w.Write(jsonResp)
 }
 
-func isStructureEmpty[T validationSchema](strc T) bool {
+func isStructureEmpty[T validationSchema](strct T) bool {
 	structSchema := new(T)
-	return reflect.DeepEqual(strc, structSchema)
+	return reflect.DeepEqual(strct, structSchema)
 }
 
 func split(str, separator string) []string {
 	return strings.Split(str, separator)
+}
+
+func generateFilePath(etc ...string) string {
+	return filepath.Join(etc...)
 }
 
 func getTemplateName(url string) string {
