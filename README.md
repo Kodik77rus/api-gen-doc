@@ -38,12 +38,12 @@ server witch generates docs (pdf, word) by template
 
 ```json
 {
-	"pdf": [
-		"http://localhost:8080/api/download/forma_025u.xml/1/pdf/2022-06-09%2004:16:55.pdf"
-	],
-	"word": [
-		"http://localhost:8080/api/download/forma_025u.xml/1/word/2022-06-09%2004:16:55.doc"
-	]
+   "pdf": [
+	"http://localhost:8080/api/download/forma_025u.xml/1/pdf/2022-06-09%2004:16:55.pdf"
+],
+   "word": [
+         http://localhost:8080/api/download/forma_025u.xml/1/word/2022-06-09%2004:16:55.doc"
+]
 }
 ```
 
