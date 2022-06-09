@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"github.com/Kodik77rus/api-gen-doc/internal/config"
-	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/Kodik77rus/api-gen-doc/internal/config"
+	"github.com/julienschmidt/httprouter"
 )
 
 const downloadFileRoute = "http://localhost:8080/api/download/"
@@ -95,8 +96,9 @@ func (a *asyncDirReader) readDir(pathToDir string, wg *sync.WaitGroup) {
 	fls := new([]string)
 
 	for _, file := range files {
-		*fls = append(*fls, generateDownloadPath(
-			generateFilePath(pathToDir, file.Name())))
+		*fls = append(*fls,
+			generateDownloadPath(
+				generateFilePath(pathToDir, file.Name())))
 	}
 
 	switch path.Base(pathToDir) {
