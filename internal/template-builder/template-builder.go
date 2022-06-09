@@ -119,6 +119,7 @@ func (t *TemplateBuilder) createWordFile() (*wordDoc, error) {
 
 	_, e := file.WriteString(*t.Template.Template)
 	if e != nil {
+		os.Remove(file.Name())
 		return nil, createWordFileErr{
 			err: err,
 		}
@@ -165,18 +166,21 @@ func (t *TemplateBuilder) convertWordToPdf(wordFile *wordDoc) (*pdfDoc, error) {
 
 	_, err = io.Copy(fw, f)
 	if err != nil {
+		os.Remove(f.Name())
 		return nil, convertWordToPdf{
 			err: err,
 		}
 	}
 
 	if err := writer.WriteField("o", wordFile.pathToFile); err != nil {
+		os.Remove(f.Name())
 		return nil, convertWordToPdf{
 			err: err,
 		}
 	}
 
 	if err := writer.Close(); err != nil {
+		os.Remove(f.Name())
 		return nil, convertWordToPdf{
 			err: err,
 		}
@@ -184,6 +188,7 @@ func (t *TemplateBuilder) convertWordToPdf(wordFile *wordDoc) (*pdfDoc, error) {
 
 	pdfFile, err := services.MultipartResponse(writer, body)
 	if err != nil {
+		os.Remove(f.Name())
 		return nil, convertWordToPdf{
 			err: err,
 		}
@@ -210,6 +215,7 @@ func (t *TemplateBuilder) savePdf(pdf *pdfDoc) error {
 
 	_, e := file.WriteString(*pdf.content)
 	if e != nil {
+		os.Remove(file.Name())
 		return savePdf{
 			err: e,
 		}
